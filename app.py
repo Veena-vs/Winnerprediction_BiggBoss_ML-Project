@@ -1,69 +1,27 @@
 
-
 import streamlit as st
 import pandas as pd
 import joblib
+import os
 
 # Load the trained model
-model = joblib.load('winner_prediction_model.pkl')
+model = joblib.load("winner_prediction_model.pkl")
 
-# Full Profession List
-profession_list = [
-    'Soap Actor', 'Model', 'Pageant Winner', 'Activist', 'Actor',
-    'Actress', 'Commoner', 'Soap Actress', 'Sports Person', 'Singer',
-    'Comedian', 'Reality Show Alumni', 'International Star',
-    'Politician', 'Film Director', 'Fashion Designer', 'Lawyer',
-    'TV Anchor', 'Controversial Fame', 'Wrestler', 'Choreographer',
-    'News Presenter', 'Cartoonist', 'Celebrity Hairstylist',
-    'Producer', 'Video Jockey', 'Radio Jockey', 'Commoner - Teacher',
-    'Stage Actress', 'Commoner - Student', 'Commoner - Farmer',
-    'Commoner - Employee', 'Commoner - Marketing', 'Swamiji',
-    'Commoner - IT Professional', 'Commoner - Engineer',
-    'Commoner - Housewife', 'Dancer', 'Social Media Star',
-    'Commoner - Police', 'Commoner - Lawyer', 'Commoner - Entrepreneur',
-    'Commoner - Receptionist', 'Entrepreneur', 'Commoner - Sales Manager',
-    'Commoner - Singer', 'Commoner - Doctor', 'Writer', 'Political Analyst',
-    'Musician', 'Doctor', 'Film director', 'Theatre Artist', 'Pharmacist',
-    'Businessman', 'Astrologer', 'Boxer', 'Art Director', 'Air Hostess',
-    'Commoner - Sales Representative', 'Numerologist', 'Commoner - Priest',
-    'Commoner - Bus Conductor', 'Commoner - Junior Artist',
-    'Commoner - Dubbing Artist', 'Journalist', 'Farmer', 'Snake enthusiast',
-    'Film Critic', 'Commoner - RJ', 'Commoner - Social Activist',
-    'Commoner - Pageant Winner', 'Lyricist', 'Commoner - Voice Trainer',
-    'Folk Artist', 'Chef', 'Preacher', 'Gym Trainer', 'Author',
-    'International star', 'Dubbing Artist', 'Actor & Actress', 'Magician',
-    'Photograher', 'Fitness Trainer', 'Makeup artist', 'Commoner - Adventurer',
-    'Disc Jockey'
-]
-profession_map = {prof: idx for idx, prof in enumerate(profession_list)}
 
-# Most Viewed State List
-states_list = [
-    'Maharashtra, Bihar, Delhi, Haryana, Jharkhand, Madhya Pradesh, Rajasthan, Uttarakhand, Uttar Pradesh',
-    'Karnataka',
-    'Telangana, Andhra Pradesh',
-    'Tamil Nadu',
-    'Maharashtra',
-    'West Bengal',
-    'Kerala'
-]
-states_map = {state: idx for idx, state in enumerate(states_list)}
-
-# Gender Categories
-gender_list = ['Male', 'Female', 'Transgender', 'Pair']
-gender_map = {gender: idx for idx, gender in enumerate(gender_list)}
-
-# Updated House Location Categories
-house_locations = ['Lonavala', 'Karjat', 'Mumbai', 'Bengaluru', 'Hyderabad', 'Chennai']
-house_map = {loc: idx for idx, loc in enumerate(house_locations)}
+# Load label encoders
+gender_encoder = joblib.load('encoders/gender_encoder.pkl')
+wildcard_encoder = joblib.load('encoders/wild_card_encoder.pkl')
+#language_encoder = joblib.load('encoders/language_encoder.pkl')
+profession_encoder = joblib.load('encoders/profession_encoder.pkl')
+state_encoder = joblib.load('encoders/most_viewed_states_encoder.pkl')
+location_encoder = joblib.load('encoders/house_location_encoder.pkl')
+ott_encoder = joblib.load('encoders/ott_season_encoder.pkl')
 
 # Age Category Mapping
-age_category_list = ['Young', 'Middle', 'Old']
 age_map = {'Young': 0, 'Middle': 1, 'Old': 2}
+age_category_list = list(age_map.keys())
 
-# Other mappings
-wildcard_map = {'Yes': 1, 'No': 0}
-ott_map = {'Yes': 1, 'No': 0}
+# Finalist Mapping
 finalist_map = {'Yes': 1, 'No': 0}
 
 # Streamlit UI
@@ -76,33 +34,39 @@ Fill in the contestant's details to predict their chances of winning the show.
 """)
 
 # Input Fields
-profession = st.selectbox("Profession", list(profession_map.keys()))
-gender = st.selectbox("Gender", gender_list)
+profession = st.selectbox("Profession", profession_encoder.classes_)
+gender = st.selectbox("Gender", gender_encoder.classes_)
+#language = st.selectbox("Language", language_encoder.classes_)
 age_category = st.selectbox("Age Category", age_category_list)
-wild_card = st.selectbox("Wild Card Entry", list(wildcard_map.keys()))
-most_viewed_state = st.selectbox("Most Viewed State", list(states_map.keys()))
-house_location = st.selectbox("House Location", house_locations)
-ott_season = st.selectbox("OTT Season", list(ott_map.keys()))
+wild_card = st.selectbox("Wild Card Entry", wildcard_encoder.classes_)
+most_viewed_state = st.selectbox("Most Viewed State", state_encoder.classes_)
+house_location = st.selectbox("House Location", location_encoder.classes_)
+ott_season = st.selectbox("OTT Season", ott_encoder.classes_)
 num_evictions = st.slider("Number of Evictions Faced", 0, 10, 1)
 finalist = st.selectbox("Is Finalist?", list(finalist_map.keys()))
 
 # Create input data
 input_data = pd.DataFrame([{
-    'Profession': profession_map[profession],
-    'Gender': gender_map[gender],
+    'Profession': profession_encoder.transform([profession])[0],
+    'Gender': gender_encoder.transform([gender])[0],
+    #'Language': language_encoder.transform([language])[0],
     'Age': age_map[age_category],
-    'Wild Card': wildcard_map[wild_card],
-    'Most Viewed States': states_map[most_viewed_state],
-    'House Location': house_map[house_location],
-    'OTT Season': ott_map[ott_season],
+    'Wild Card': wildcard_encoder.transform([wild_card])[0],
+    'Most Viewed States': state_encoder.transform([most_viewed_state])[0],
+    'House Location': location_encoder.transform([house_location])[0],
+    'OTT Season': ott_encoder.transform([ott_season])[0],
     'Number of Evictions Faced': num_evictions,
     'Finalist': finalist_map[finalist]
 }])
 
+st.write("🔍 Input Data Sent to Model:")
+st.write(input_data)
+
+
 # Prediction
 if st.button("Predict"):
     prediction = model.predict(input_data)[0]
-    st.success(f"🎯 Prediction: {'Winner' if prediction == 1 else 'Not Winner'}")
+    st.success(f"🔏 Prediction: {'Winner' if prediction == 1 else 'Not Winner'}")
 
     # Confidence score if available
     if hasattr(model, 'predict_proba'):
@@ -115,10 +79,3 @@ if st.button("Predict"):
         st.markdown("🏆 This contestant has a high chance of winning!")
     else:
         st.markdown("📉 This contestant is less likely to win.")
-
-
-
-
-
-
-
