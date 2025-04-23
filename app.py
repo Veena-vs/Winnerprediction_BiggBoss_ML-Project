@@ -3,9 +3,32 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import base64
+
+def set_background(image_path):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    css = f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/avif;base64,{encoded_string}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+st.set_page_config(page_title="Bigg Boss Winner Prediction", page_icon="🏆")
+st.title("🏆 Bigg Boss Winner Prediction App")
+
+# Apply background
+set_background("C:/Users/DELL/Documents/oct_ml/Project/pexels-n-voitkevich-6532373.jpg")
 
 # Load the trained model
-model = joblib.load("winner_prediction_model.pkl")
+model = joblib.load("winner_prediction_model2.pkl")
 
 
 # Load label encoders
@@ -24,14 +47,18 @@ age_category_list = list(age_map.keys())
 # Finalist Mapping
 finalist_map = {'Yes': 1, 'No': 0}
 
+
+
+
 # Streamlit UI
-st.set_page_config(page_title="Bigg Boss Winner Prediction", page_icon="🏆")
-st.title("🏆 Bigg Boss Winner Prediction App")
+#st.set_page_config(page_title="Bigg Boss Winner Prediction", page_icon="🏆")
+# st.title("🏆 Bigg Boss Winner Prediction App")
 
 st.markdown("""
 Welcome to the **Bigg Boss Winner Prediction App**!  
 Fill in the contestant's details to predict their chances of winning the show.
 """)
+
 
 # Input Fields
 profession = st.selectbox("Profession", profession_encoder.classes_)
@@ -79,3 +106,5 @@ if st.button("Predict"):
         st.markdown("🏆 This contestant has a high chance of winning!")
     else:
         st.markdown("📉 This contestant is less likely to win.")
+
+
